@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>CYBERKILLER - Maintenance</title>
+  <style>
+    :root {
+      --bg: #08060d;
+      --bg2: #0e0a18;
+      --mag: #e834c6;
+      --cyan: #22d3ee;
+      --txt: #e8e6f0;
+      --dim: #8b8699;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: radial-gradient(ellipse at 50% 0%, #160a26 0%, var(--bg) 60%);
+      color: var(--txt);
+      font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      overflow: hidden;
+    }
+    .wrap { max-width: 560px; text-align: center; position: relative; z-index: 2; }
+    .glitch {
+      font-size: clamp(2rem, 9vw, 4rem);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--mag);
+      text-shadow: 0 0 24px rgba(232, 52, 198, 0.55), 2px 0 var(--cyan), -2px 0 #ff3b6b;
+      animation: flicker 4s infinite;
+      margin-bottom: 8px;
+    }
+    @keyframes flicker {
+      0%, 92%, 100% { opacity: 1; }
+      93% { opacity: 0.3; }
+      94% { opacity: 1; }
+      96% { opacity: 0.5; }
+      97% { opacity: 1; }
+    }
+    .eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.32em;
+      color: var(--cyan);
+      margin-bottom: 28px;
+    }
+    .panel {
+      border: 1px solid rgba(232, 52, 198, 0.3);
+      background: rgba(14, 10, 24, 0.7);
+      padding: 28px 24px;
+      backdrop-filter: blur(4px);
+    }
+    h1 {
+      font-size: 1.15rem;
+      color: var(--txt);
+      margin-bottom: 14px;
+      letter-spacing: 0.04em;
+    }
+    p { color: var(--dim); line-height: 1.7; font-size: 0.92rem; margin-bottom: 14px; }
+    .pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--cyan);
+      letter-spacing: 0.1em;
+      margin-top: 8px;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+    .scan {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background: repeating-linear-gradient(transparent, transparent 2px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px);
+    }
+    a { color: var(--cyan); }
+  </style>
+</head>
+<body>
+  <div class="scan"></div>
+  <div class="wrap">
+    <div class="eyebrow">CYBERKILLER ARENA</div>
+    <div class="glitch">MAINTENANCE</div>
+    <div class="panel">
+      <h1>The arena is briefly offline.</h1>
+      <p>
+        We're deploying an update or running maintenance. Your account, scores,
+        and progress are safe. This usually takes just a few minutes.
+      </p>
+      <p>Grab some coffee and refresh shortly.</p>
+      <div class="pulse"><span class="dot"></span> AUTO-RETRYING…</div>
+    </div>
+  </div>
+  <script>
+    // Auto-reload every 20s so players land back in the arena the moment it's up.
+    setTimeout(function () { location.reload(); }, 20000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+build/
+local/wg-keys/
+local/wg0.conf
+local/hub_public.key
+node_modules/
+.next/
+*.log
+.env
+.env.prod
+.claude/
+
+# MERIDIAN scenario throwaway SSH keypairs - generated at build time by
+# local/build-corp-images.sh, never committed.
+docker/corp/keys/*
+!docker/corp/keys/README.txt
+
+# MERIDIAN VM scenario keys (generated, not committed)
+vm/meridian/keys/*
+!vm/meridian/keys/README.txt
+
+# python bytecode
+__pycache__/
+*.pyc
+
+# Vagrant VM state / disk images - never commit
+vm/meridian/.vagrant/
+.vagrant/
+*.vmdk
+*.vmem
+*.vmem.lck
+*.lck
+vm/meridian/WRITEUP.md
+ALPHA-QA-REPORT.md
+
+# TypeScript build cache
+*.tsbuildinfo

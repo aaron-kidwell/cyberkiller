@@ -1,0 +1,15 @@
+[Unit]
+Description=AD VM Watchdog
+After=network.target vmware.service
+
+[Service]
+Type=simple
+User=aaron
+ExecStart=/home/aaron/Projects/cyberkiller/local/vm-watchdog.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,131 @@
+# CyberKiller - single canonical compose for self-hosting.
+# Driven entirely by .env (see .env.example). Run ./deploy.sh to generate .env,
+# build everything, and bring it up.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ck-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cyberkiller
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: cyberkiller
+    volumes:
+      - ck-pg:/var/lib/postgresql/data
+    networks:
+      ck-net:
+        ipv4_address: 172.20.0.2
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cyberkiller"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ck-redis
+    restart: unless-stopped
+    networks:
+      ck-net:
+        ipv4_address: 172.20.0.3
+
+  control:
+    build:
+      context: .
+      dockerfile: local/Dockerfile.control-plane
+    image: cyberkiller/control-plane:latest
+    container_name: ck-control
+    restart: unless-stopped
+    # NET_ADMIN + the Docker socket let the control plane spin target containers
+    # on the arena bridge and DNAT their service ports to fixed arena IPs.
+    cap_add:
+      - NET_ADMIN
+    environment:
+      DB_DSN: postgres://cyberkiller:${POSTGRES_PASSWORD}@172.20.0.2:5432/cyberkiller?sslmode=disable
+      REDIS_URL: redis://172.20.0.3:6379
+      PGHOST: "172.20.0.2"
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_USERNAME: ${ADMIN_USER}
+      ADMIN_PASSWORD: ${ADMIN_PASS}
+      LOCAL_DOCKER_ORCHESTRATION: "true"
+      CORP_ORCHESTRATION: ${CORP_ORCHESTRATION:-true}
+      MAX_ACTIVE_HILLS: ${MAX_ACTIVE_HILLS:-5}
+      SIGNUP_OPEN: ${SIGNUP_OPEN:-true}
+      SIGNUP_INVITE_CODE: ${SIGNUP_INVITE_CODE:-}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      UPLOAD_DIR: /opt/cyberkiller/uploads
+    ports:
+      - "${API_BIND:-8080}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ck-uploads:/opt/cyberkiller/uploads
+    networks:
+      - ck-net
+      - ck-arena
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./web
+      dockerfile: ../local/Dockerfile.web-frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${API_URL}
+        NEXT_PUBLIC_ADMIN_HANDLE: ${ADMIN_USER}
+    image: cyberkiller/web-frontend:latest
+    container_name: ck-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${API_URL}
+      NEXT_PUBLIC_ADMIN_HANDLE: ${ADMIN_USER}
+    ports:
+      - "${WEB_BIND:-3000}:3000"
+    networks:
+      - ck-net
+    depends_on:
+      - control
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: ../local/Dockerfile.web-frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${API_URL}
+    image: cyberkiller/admin-panel:latest
+    container_name: ck-admin
+    restart: unless-stopped
+    command: ["npx", "next", "start", "-p", "3000"]
+    environment:
+      NEXT_PUBLIC_API_URL: ${API_URL}
+      ADMIN_API_USER: ${ADMIN_USER}
+      ADMIN_API_PASS: ${ADMIN_PASS}
+    # Admin panel binds to localhost by default - reach it via SSH tunnel, never
+    # expose it to the internet.
+    ports:
+      - "${ADMIN_BIND:-127.0.0.1:3001}:3000"
+    networks:
+      - ck-net
+    depends_on:
+      - control
+
+networks:
+  ck-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+  # Targets + the control plane share ck-arena. deploy.sh creates this network
+  # BEFORE compose runs, as either a private bridge (10.66.20.0/24, host-local) or
+  # an ipvlan attached to the physical LAN (each box gets a real LAN IP, reachable
+  # from any machine with no routing) - see ARENA_MODE in .env. Marked external so
+  # the deploy controls the driver; isolation from ck-net (DB/control plane) holds
+  # in both modes.
+  ck-arena:
+    name: ck-arena
+    external: true
+
+volumes:
+  ck-pg:
+  ck-uploads:

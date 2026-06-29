@@ -1,0 +1,12 @@
+<?php
+// Meridian shipment portal - config backup (2024-02-11)
+// *** This file should NOT be web-readable. Ops: delete from /backup/. ***
+define('DB_HOST', '10.66.20.52');   // mer-db01
+define('DB_USER', 'meridian_app');
+define('DB_PASS', 'Fr3ight-Db-2024!');
+define('DB_NAME', 'shipments');
+
+// Portal admin (legacy local login, pre-SSO):
+//   user: portaladmin   pass: Sh1pp1ng#Portal!
+// SMTP relay: smtp.meridian.corp (no auth, internal only)
+?>

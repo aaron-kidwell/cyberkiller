@@ -1,0 +1,85 @@
+# CyberKiller - Caddy reverse proxy with automatic TLS
+# Usage: caddy run --config Caddyfile
+# Replace {$DOMAIN} with your actual domain (or Hetzner IP for testing)
+#
+# With a real domain:  caddy run --config Caddyfile
+# Self-signed (no domain):  caddy run --config Caddyfile.ip
+{
+	# Disable HTTP/3 globally - Android Firefox has WS-over-HTTP/3 quirks
+	servers {
+		protocols h1 h2
+	}
+}
+
+cyberkiller.net {
+	# Admin API - block from public internet entirely.
+	# Admins reach the panel via SSH tunnel to localhost:3001 which talks to
+	# localhost:8080 directly (bypassing Caddy). Public exposure of /api/admin/*
+	# turns a leaked admin password into full compromise via brute-force.
+	@publicAdmin {
+		path /api/admin/*
+		not remote_ip 127.0.0.1 ::1
+	}
+	handle @publicAdmin {
+		respond "Not Found" 404
+	}
+
+	# API
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy localhost:8080
+	}
+
+	# WebSocket (chat) - flush_interval -1 disables buffering for streaming
+	handle /chat/* {
+		reverse_proxy localhost:8080 {
+			flush_interval -1
+			transport http {
+				dial_timeout 5s
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
+
+	# Admin panel (only accessible via SSH tunnel - this binding stays on localhost)
+	# Access: ssh -L 3001:localhost:3001 root@<server>
+	# Then open http://localhost:3001
+
+	# Web frontend
+	handle {
+		reverse_proxy localhost:3000
+	}
+
+	# Maintenance fallback - when the web frontend (or API) is unreachable,
+	# Caddy serves the static maintenance page instead of a raw browser error.
+	# Triggers on the proxy errors Caddy raises when the upstream is down
+	# (502 Bad Gateway / 503 / 504 / dial failures). The page auto-reloads
+	# every 20s so players return to the arena the moment it's back.
+	handle_errors {
+		@down expression {http.error.status_code} in [502, 503, 504]
+		handle @down {
+			root * /var/www/ck-maintenance
+			rewrite * /index.html
+			file_server
+			header Retry-After "30"
+		}
+		# Any other error: pass through Caddy's default text response.
+		handle {
+			respond "{http.error.status_code} {http.error.status_text}" {http.error.status_code}
+		}
+	}
+
+	# Security headers applied at proxy layer too
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	log {
+		output file /tmp/caddy-access.log
+		format json
+	}
+}

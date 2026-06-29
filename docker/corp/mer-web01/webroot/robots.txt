@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /backup/
+Disallow: /inc/
+Disallow: /portal/
+Disallow: /server-status

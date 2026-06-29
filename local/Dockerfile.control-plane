@@ -1,0 +1,17 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    iproute2 iptables conntrack \
+    postgresql-client openssl ca-certificates curl docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY build/cyberkiller-api /opt/cyberkiller/cyberkiller-api
+COPY api/internal/db/schema.sql /opt/cyberkiller/schema.sql
+COPY local/start-control-plane.sh /opt/cyberkiller/start.sh
+
+RUN chmod +x /opt/cyberkiller/cyberkiller-api /opt/cyberkiller/start.sh
+
+ENV LOCAL_DOCKER_ORCHESTRATION=true
+
+EXPOSE 8080
+ENTRYPOINT ["/opt/cyberkiller/start.sh"]

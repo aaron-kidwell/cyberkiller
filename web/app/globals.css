@@ -1,0 +1,1164 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Exo+2:wght@300;400;600&display=swap');
+
+:root {
+  --bg: #080810;
+  --bg2: #0d0d1a;
+  --panel: #111124;
+  --border: #1e1e3a;
+  --mag: #e834c6;
+  --mag-dim: rgba(232, 52, 198, 0.15);
+  --cyan: #22d3ee;
+  --cyan-dim: rgba(34, 211, 238, 0.12);
+  --green: #00ff88;
+  --red: #ff3355;
+  --purple: #8b5cf6;
+  /* Amber was referenced across the app (chat mute badge, known-issues, flag
+     captures) but never defined here, so bare var(--amber) calls rendered with
+     no color. Define it once so every call site is consistent with the
+     var(--amber, #f59e0b) fallbacks already scattered through the components. */
+  --amber: #f59e0b;
+  --txt: #e2e2f8;
+  --txt-dim: #9a9ac8;
+  --txt-bright: #fafaff;
+  /* Brighter accent variants for hover/active states. Previously these bloom
+     colors were hard-coded inline (#ff44d4) in a few places - centralize them. */
+  --mag-bright: #ff4fd8;
+  --cyan-bright: #5ee9ff;
+  --mono: 'Share Tech Mono', ui-monospace, monospace;
+  --hud: 'Orbitron', system-ui, sans-serif;
+  --body: 'Exo 2', system-ui, sans-serif;
+
+  /* Spacing scale (8px base) - gives the whole UI a shared rhythm instead of
+     ad-hoc pixel values. */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px;
+
+  /* Shared easing + glow tokens so motion and neon feel consistent everywhere. */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --glow-mag: 0 0 18px rgba(232, 52, 198, 0.45);
+  --glow-cyan: 0 0 16px rgba(34, 211, 238, 0.30);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100%;
+  /* Layer a faint two-channel signal wash (magenta high, cyan low) over the
+     base black so the page never reads as flat #000 - it feels like a powered
+     console rather than an empty void. Fixed so it doesn't scroll. */
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(232, 52, 198, 0.07), transparent 60%),
+    radial-gradient(ellipse 80% 50% at 50% 110%, rgba(34, 211, 238, 0.05), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--txt);
+  font-family: var(--mono);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* CRT scanline overlay - kept very subtle so it textures the screen without
+   hurting readability. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0, 0, 0, 0.035) 2px, rgba(0, 0, 0, 0.035) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Orchestrated load/reveal motion ──────────────────────────────────────
+   Pure-CSS reveals on identical SSR/client markup, so they can never cause a
+   hydration mismatch. The reduced-motion rule below neutralizes them. */
+@keyframes ck-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ck-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.ck-reveal { animation: ck-rise 0.5s var(--ease) both; }
+/* Stagger children of a .ck-stagger container so feeds/grids cascade in. */
+.ck-stagger > * { animation: ck-rise 0.45s var(--ease) both; }
+.ck-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.ck-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.ck-stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.ck-stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.ck-stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.ck-stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.ck-stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.ck-stagger > *:nth-child(8) { animation-delay: 0.30s; }
+.ck-stagger > *:nth-child(n+9) { animation-delay: 0.34s; }
+
+a { color: var(--cyan); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Keyboard focus: visible cyan ring for tab navigation; no ring on mouse click */
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+
+::selection { background: var(--mag); color: var(--bg); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--mag-dim); border-radius: 4px; }
+/* Brighten the thumb on hover so scrollable regions feel grabbable. */
+::-webkit-scrollbar-thumb:hover { background: rgba(232, 52, 198, 0.4); }
+
+/* Nav */
+.ck-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  background: rgba(8, 8, 16, 0.97);
+  border-bottom: 1px solid var(--border);
+}
+.ck-logo {
+  font-family: var(--hud);
+  font-weight: 900;
+  font-size: 1.05rem;
+  letter-spacing: 0.15em;
+  color: var(--mag);
+  text-shadow: 0 0 12px rgba(232, 52, 198, 0.4);
+}
+.ck-nav-links { display: flex; gap: 20px; }
+.ck-nav-link {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+.ck-nav-link:hover, .ck-nav-link.active { color: var(--cyan); text-decoration: none; }
+.ck-nav-link-cta {
+  color: var(--mag) !important;
+  border: 1px solid rgba(232, 52, 198, 0.35);
+  padding: 4px 12px !important;
+}
+.ck-nav-link-cta:hover { background: var(--mag-dim); }
+.ck-nav:hover .ck-edit-toggle { opacity: 0.55; }
+.ck-edit-toggle:hover { opacity: 1 !important; color: var(--mag) !important; }
+
+.ck-main { padding-top: 52px; }
+
+/* Auth/secondary pages: vertically compose the form instead of floating it at
+   the top of an empty viewport. Grid centering grows with tall content (signup)
+   so nothing clips, and the page still scrolls when needed. */
+.auth-shell {
+  min-height: calc(100vh - 52px);
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+}
+
+/* Press-kit/media download rows: image + text + download button. On a phone the
+   button squishes, so wrap it to its own full-width line below the asset. */
+.media-item {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 12px;
+}
+.media-item .media-dl { flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 520px) {
+  .media-item { flex-wrap: wrap; }
+  .media-item .media-dl { width: 100%; text-align: center; }
+}
+
+/* Connecting-to-arena loading screen: the ghost mascot floats above the text. */
+.connect-ghost {
+  animation: connect-ghost-float 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 14px rgba(232, 52, 198, 0.45));
+}
+@keyframes connect-ghost-float {
+  0%, 100% { transform: translateY(0); opacity: 0.82; }
+  50%      { transform: translateY(-8px); opacity: 1; }
+}
+
+/* Hub shell */
+.hub-app {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 52px);
+  overflow: hidden;
+}
+.hub-sitrep {
+  position: relative;
+  padding: 10px 18px 10px 24px;
+  /* A faint magenta-to-transparent wash + a solid left rail reads as a priority
+     status line, the one thing a player should scan first on entry. */
+  background:
+    linear-gradient(90deg, rgba(232, 52, 198, 0.06), transparent 40%),
+    var(--bg2);
+  border-bottom: 1px solid var(--border);
+  box-shadow: inset 3px 0 0 var(--mag);
+  font-size: 0.92rem;
+  color: var(--cyan);
+  flex-shrink: 0;
+  line-height: 1.5;
+}
+.hub-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 18px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.hud-label {
+  font-family: var(--hud);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  color: var(--mag);
+  text-shadow: 0 0 12px rgba(232, 52, 198, 0.4);
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  display: inline-block;
+  margin-right: 6px;
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 6px var(--green);
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.hud-stat {
+  font-size: 0.82rem;
+  color: var(--txt-dim);
+  margin-right: 12px;
+  white-space: nowrap;
+}
+.hud-stat b { color: var(--cyan); font-weight: 600; }
+.hud-stat .mag { color: var(--mag); }
+
+.hub-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 18px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  align-items: stretch;
+}
+.hub-tab {
+  position: relative;
+  padding: 11px 16px 10px;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--txt-dim);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.hub-tab:hover { color: var(--txt); background: rgba(255, 255, 255, 0.02); }
+.hub-tab.active {
+  color: var(--mag);
+  border-bottom-color: var(--mag);
+  text-shadow: 0 0 10px rgba(232, 52, 198, 0.45);
+}
+/* A soft bloom riding the active tab's underline so the selection feels lit, not
+   just inked. */
+.hub-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 12px; right: 12px; bottom: -2px; height: 2px;
+  background: var(--mag);
+  box-shadow: 0 0 10px var(--mag), 0 0 4px var(--mag);
+}
+.hub-tab-link {
+  margin-left: 8px;
+  font-size: 0.78rem;
+  align-self: center;
+  color: var(--cyan);
+  padding: 10px 8px;
+  white-space: nowrap;
+}
+.hub-tab-link-end { margin-left: auto; color: var(--txt-dim); }
+
+.hub-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.hub-main { flex: 1; overflow-y: auto; padding: 18px 20px; min-width: 0; }
+
+/* Cards */
+.tgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 2px;
+  background: var(--border);
+  margin-bottom: 18px;
+}
+.tcard {
+  position: relative;
+  /* Faint top-down sheen on the panel so cards read as physical modules, not
+     flat fills, and so the colored tier border at the top has something to sit on. */
+  background: linear-gradient(180deg, #15152e 0%, var(--panel) 38%);
+  padding: 16px 18px;
+  transition: background 0.18s var(--ease), box-shadow 0.18s var(--ease),
+              transform 0.18s var(--ease);
+}
+/* Targeting reticle: four corner ticks drawn from a single element's layered
+   gradients. Always faintly present so the whole grid reads as a field of
+   tracked contacts, then "locks on" (brighter + a touch larger via the inset
+   change) for the machine you're eyeing. Costs no layout; killed by the global
+   reduced-motion rule. */
+.tcard::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+  opacity: 0.18;
+  transition: opacity 0.18s var(--ease), inset 0.18s var(--ease);
+  background:
+    linear-gradient(var(--cyan), var(--cyan)) 0 0 / 11px 1px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 0 0 / 1px 11px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 100% 0 / 11px 1px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 100% 0 / 1px 11px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 0 100% / 11px 1px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 0 100% / 1px 11px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 100% 100% / 11px 1px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 100% 100% / 1px 11px no-repeat;
+}
+.tcard:hover {
+  background: linear-gradient(180deg, #1a1a38 0%, #14142b 60%);
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.22), var(--glow-cyan);
+  transform: translateY(-2px);
+}
+.tcard:hover::before { opacity: 0.85; inset: 6px; }
+.tcard-ip { font-size: 1.05rem; margin-bottom: 8px; font-weight: 600; }
+.tier-badge {
+  font-family: var(--hud);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  border: 1px solid;
+  padding: 3px 10px;
+  display: inline-block;
+  margin-bottom: 10px;
+  /* Tinted fill (the colored border's color at low alpha via currentColor) so a
+     tier badge reads as a lit chip rather than an outline. */
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.port-pill {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  margin-right: 6px;
+  margin-bottom: 4px;
+  display: inline-block;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+/* Open ports read as live attack surface: light up cyan on hover. */
+.port-pill:hover { border-color: var(--cyan); color: var(--cyan); }
+.hint { font-size: 0.82rem; color: var(--txt-dim); padding: 6px 0; border-top: 1px solid var(--border); margin-top: 6px; line-height: 1.45; }
+.scenario-name { color: var(--txt-bright); font-size: 0.88rem; border-top: none; margin-top: 0; padding-top: 0; }
+.flag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.flag-pill {
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  color: var(--txt-dim);
+  background: var(--bg);
+}
+/* A captured flag is a win: tint the fill and give it a soft green glow so it
+   reads at a glance against the un-captured pills. */
+.flag-pill.captured {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0, 255, 136, 0.07);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.18);
+}
+.cred { font-size: 0.82rem; color: var(--green); margin-top: 8px; }
+.intel-badge { color: var(--cyan); font-size: 0.72rem; letter-spacing: 0.06em; }
+.ttl-track { height: 3px; background: var(--border); margin-top: 6px; }
+.ttl-fill { height: 100%; transition: width 0.5s; }
+
+.hp-label {
+  font-family: var(--hud);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  margin-bottom: 12px;
+  /* Unifying section marker: a small lit rail in the label's own color, so every
+     section header reads as one channel in the same console. */
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hp-label::before {
+  content: '';
+  width: 3px;
+  height: 0.95em;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  flex-shrink: 0;
+}
+
+/* Scores */
+.score-hdr, .score-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 110px 70px;
+  padding: 12px 14px;
+  align-items: center;
+}
+.score-hdr { font-size: 0.72rem; color: var(--txt-dim); border-bottom: 1px solid var(--border); }
+.score-row { background: var(--panel); border-bottom: 1px solid var(--border); font-size: 0.92rem; transition: background 0.12s ease; }
+/* Row highlight makes it easy to track your line across the four columns. */
+.score-row:hover { background: #16162e; }
+
+/* Activity */
+.activity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 700px) { .activity-grid { grid-template-columns: 1fr; } }
+.feed-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; line-height: 1.5; }
+.kill-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border: 1px solid var(--mag);
+  color: var(--mag);
+  margin-right: 6px;
+}
+
+/* Shared feed row (kill feed / flag captures): subtle slide + tint on hover so
+   scanning a long feed feels alive and each entry is clearly a discrete event. */
+.ck-feed-row {
+  transition: background 0.14s var(--ease), transform 0.14s var(--ease);
+}
+.ck-feed-row:hover {
+  background: rgba(34, 211, 238, 0.05) !important;
+  transform: translateX(2px);
+}
+
+/* Intel drop card: left signal-rail + lift on hover. */
+.ck-intel-card {
+  position: relative;
+  transition: background 0.15s var(--ease), box-shadow 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.ck-intel-card:hover {
+  background: #15152e;
+  box-shadow: var(--glow-cyan);
+  transform: translateY(-1px);
+}
+
+/* Empty-state block: a calm, centered invitation rather than bare text. */
+.ck-empty {
+  text-align: center;
+  padding: var(--s7) var(--s5);
+  border: 1px dashed var(--border);
+  background: rgba(255, 255, 255, 0.012);
+}
+.ck-empty-title {
+  font-family: var(--hud);
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  color: var(--txt-dim);
+  margin-bottom: var(--s2);
+}
+.ck-empty-body { color: var(--txt-dim); font-size: 0.82rem; line-height: 1.6; }
+
+/* Chat */
+.hub-sidebar {
+  position: relative;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg2);
+  flex-shrink: 0;
+  overflow: visible;
+}
+.chat-resize-handle {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 10;
+}
+.chat-resize-handle:hover,
+.chat-resize-handle:active {
+  background: var(--cyan);
+  opacity: 0.25;
+}
+.chat-hdr {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+}
+.chat-label { font-family: var(--hud); font-size: 0.68rem; letter-spacing: 0.12em; color: var(--cyan); }
+.chat-muted-badge {
+  font-size: 0.6rem;
+  padding: 1px 6px;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  cursor: pointer;
+  border-radius: 2px;
+  font-family: var(--hud);
+  letter-spacing: 0.05em;
+}
+.chat-muted-badge:hover { background: var(--amber); color: var(--bg); }
+.chat-msgs { flex: 1; overflow-y: auto; padding: 10px 12px; min-height: 0; }
+.chat-msg { font-size: 0.78rem; line-height: 1.55; margin-bottom: 4px; word-break: break-word; }
+.chat-msg-text { color: var(--txt); }
+.chat-sys { font-size: 0.72rem; color: var(--txt-dim); opacity: 0.85; margin-bottom: 4px; }
+.chat-mention {
+  color: var(--cyan);
+  font-weight: 600;
+  background: rgba(34,211,238,0.08);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+.chat-mention-me {
+  color: var(--mag);
+  background: rgba(232,52,198,0.13);
+  border: 1px solid rgba(232,52,198,0.3);
+}
+.chat-input-wrap { border-top: 1px solid var(--border); padding: 10px 12px; flex-shrink: 0; position: relative; }
+.chat-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--txt);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  padding: 8px 10px;
+  outline: none;
+  min-width: 0;
+}
+.chat-input { transition: border-color 0.12s ease, box-shadow 0.12s ease; }
+.chat-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan-dim), 0 0 12px rgba(34, 211, 238, 0.14); }
+.chat-row { display: flex; gap: 6px; margin-top: 6px; align-items: stretch; }
+.chat-emote-toggle {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.chat-emote-toggle:hover { border-color: var(--cyan); }
+.chat-send {
+  background: var(--mag);
+  border: none;
+  color: var(--bg);
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  transition: background 0.14s var(--ease), box-shadow 0.14s var(--ease), transform 0.06s ease;
+}
+.chat-send:hover { background: var(--mag-bright); box-shadow: var(--glow-mag); }
+.chat-send:active { transform: translateY(1px); }
+.chat-join-btn {
+  width: 100%;
+  margin-top: 6px;
+  font-family: var(--hud);
+  font-size: 0.65rem;
+  letter-spacing: 0.09em;
+  background: var(--mag);
+  color: var(--bg);
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  transition: background 0.14s var(--ease), box-shadow 0.14s var(--ease);
+}
+.chat-join-btn:hover { background: var(--mag-bright); box-shadow: var(--glow-mag); }
+/* New chat messages slide in instead of popping - subtle, and naturally
+   reduced-motion-safe via the global guard. */
+.chat-msg { animation: ck-fade 0.25s var(--ease) both; }
+
+/* Emote picker */
+.emote-picker {
+  position: absolute;
+  bottom: 100%;
+  left: 12px;
+  right: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  z-index: 100;
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+}
+.emote-search {
+  background: var(--bg);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--txt);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  padding: 8px 10px;
+  outline: none;
+}
+.emote-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+.emote-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 1.6rem;
+  padding: 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: border-color 0.1s, background 0.1s;
+}
+.emote-btn:hover {
+  border-color: var(--cyan);
+  background: rgba(34,211,238,0.08);
+}
+
+/* @mention autocomplete */
+.mention-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 12px;
+  right: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  z-index: 100;
+}
+.mention-item {
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.mention-item:hover, .mention-item.active { background: rgba(34,211,238,0.08); }
+
+/* Context menu */
+.chat-ctx-menu {
+  position: fixed;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  z-index: 200;
+  min-width: 140px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.ctx-menu-handle {
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--hud);
+  letter-spacing: 0.05em;
+}
+.ctx-menu-item {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--txt);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  padding: 8px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.ctx-menu-item:last-child { border-bottom: none; }
+.ctx-menu-item:hover { background: rgba(34,211,238,0.08); color: var(--cyan); }
+.ctx-menu-mute:hover { background: rgba(244,63,94,0.1); color: var(--red); }
+.ctx-menu-unmute:hover { background: rgba(34,211,238,0.08); color: var(--green); }
+
+/* Landing */
+.landing-scroll { overflow-y: auto; min-height: calc(100vh - 48px); }
+.hero {
+  position: relative;
+  /* isolate so the bloom ::before (z-index:-1) sits behind the hero's in-flow
+     children within this stacking context, rather than painting over them. */
+  isolation: isolate;
+  padding: 72px 24px 56px;
+  text-align: center;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+/* Ambient signal bloom behind the lockup: a magenta core lifts the ghost +
+   wordmark off the black, with a faint cyan wash low down so the brand's two
+   accents are both present. Sits behind the content (z-index:-1 within the
+   isolated .hero stacking context). */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 58% 48% at 50% 38%, rgba(232, 52, 198, 0.16), transparent 70%),
+    radial-gradient(ellipse 42% 32% at 50% 82%, rgba(34, 211, 238, 0.08), transparent 72%);
+}
+/* Faint radar grid behind the lockup: a thin cyan lattice masked to fade out
+   toward the center and edges, so it textures the floor of the arena without
+   competing with the wordmark. Distinct from a generic full-bleed grid. */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 55%, black 5%, transparent 75%);
+          mask-image: radial-gradient(ellipse 70% 70% at 50% 55%, black 5%, transparent 75%);
+}
+.hero-title {
+  font-family: var(--hud);
+  font-weight: 900;
+  font-size: clamp(2.5rem, 9vw, 4.5rem);
+  letter-spacing: 0.06em;
+  color: var(--mag);
+  text-shadow: 0 0 24px rgba(232, 52, 198, 0.4);
+  line-height: 1.05;
+}
+/* Logo lockup: ghost + wordmark as one composed header. */
+.ck-lockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 0 0 12px;
+}
+.ck-ghost {
+  flex-shrink: 0;
+  width: auto;
+  height: clamp(110px, 20vw, 168px);
+  /* Tuck into the wordmark so they read as a single mark, and nudge up so the
+     ghost's body aligns with the cap height of CYBERKILLER. */
+  margin-right: clamp(-44px, -5vw, -28px);
+  margin-bottom: 6px;
+  filter: drop-shadow(0 0 22px rgba(232, 52, 198, 0.55));
+  animation: ghostFloat 5s ease-in-out infinite;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+}
+.ck-wordmark {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  filter: drop-shadow(0 0 24px rgba(232, 52, 198, 0.45));
+}
+@keyframes ghostFloat {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-10px) rotate(1deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Honor reduced-motion across the whole UI: kill the pulse/float/fade/scan
+     animations and snap transitions, for vestibular-sensitivity + a calmer feel. */
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    /* Zero the delay too: staggered reveals use fill-mode `both`, so a leftover
+       delay would hold those elements at their (invisible) start state. */
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (max-width: 640px) {
+  /* Stack on narrow screens: ghost above, centered, no overlap. */
+  .ck-lockup { flex-direction: column; gap: 4px; }
+  .ck-ghost { margin-right: 0; height: clamp(96px, 28vw, 140px); }
+}
+.hero-sub {
+  font-family: var(--hud);
+  font-size: 0.85rem;
+  letter-spacing: 0.22em;
+  color: var(--cyan);
+  margin: 12px 0;
+}
+.hero-p {
+  font-family: var(--body);
+  font-size: 1rem;
+  color: var(--txt-dim);
+  max-width: 520px;
+  margin: 0 auto 24px;
+  line-height: 1.65;
+}
+.btn-mag {
+  font-family: var(--hud);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  background: var(--mag);
+  color: var(--bg);
+  border: none;
+  padding: 12px 24px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+/* Tactile feedback: neon bloom on hover, a small press on click. */
+.btn-mag { transition: background 0.15s var(--ease), box-shadow 0.15s var(--ease), transform 0.06s ease; }
+.btn-mag:hover { background: var(--mag-bright); box-shadow: var(--glow-mag); }
+.btn-mag:active { transform: translateY(1px); }
+.ticker {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  padding: 10px 0;
+  overflow: hidden;
+}
+.ticker-inner {
+  display: flex;
+  white-space: nowrap;
+  animation: roll 240s linear infinite;
+  font-size: 0.85rem;
+  width: max-content;
+}
+/* Each half is its own flex container with internal gap. The two halves sit
+   flush against each other, with one extra gap added via margin so the seam
+   between half-1's last item and half-2's first item matches the spacing
+   between every other adjacent item. Translating by -50% then aligns
+   perfectly because half-2 is identical to half-1. */
+.ticker-half {
+  display: flex;
+  gap: 48px;
+  padding-right: 48px; /* maintain rhythm across the seam */
+}
+.ticker:hover .ticker-inner { animation-play-state: paused; }
+@keyframes roll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+.connect-pre {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  font-size: 0.85rem;
+  line-height: 1.9;
+  color: var(--green);
+  overflow-x: auto;
+}
+.warn-box {
+  background: var(--panel);
+  border-left: 3px solid var(--red);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  font-size: 0.92rem;
+}
+.profile-links-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  font-size: 0.92rem;
+}
+.profile-links-box a { color: var(--cyan); font-weight: 600; }
+.profile-links-box a:last-child { color: var(--mag); }
+
+.hub-footer {
+  flex-shrink: 0;
+  padding: 8px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  font-size: 0.82rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.hub-footer a { color: var(--cyan); font-weight: 600; }
+.hub-footer-sep { color: var(--txt-dim); }
+
+/* ── Hamburger (mobile nav toggle, hidden on desktop) ─────────────────── */
+.ck-nav-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--txt);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ── Tiling-WM / narrow-window breakpoint ─────────────────────────────────
+   Quarter/half-screen tiles (e.g. Hyprland ~960px) are too narrow for the
+   fixed chat sidebar + card grid side-by-side. Below 1100px: stack the chat
+   full-width below the content, let the page scroll naturally, and give the
+   target cards the full width so they're readable. Desktop chrome (nav, fonts)
+   is untouched - only the hub layout reflows. */
+@media (max-width: 1100px) {
+  .hub-app { height: auto; min-height: calc(100vh - 52px); overflow: visible; }
+  .hub-body { flex-direction: column; overflow: visible; min-height: 0; }
+  .hub-main { overflow-y: visible; flex: none; min-width: 0; }
+  .hub-sidebar {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border);
+    height: 55vh;
+    max-height: 560px;
+  }
+  .chat-resize-handle { display: none; }
+  .hub-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .hub-tabs::-webkit-scrollbar { display: none; }
+  .tgrid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+}
+
+/* ── Mobile breakpoint ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Nav → hamburger dropdown */
+  .ck-nav-hamburger { display: block; }
+  .ck-nav-links {
+    display: none;
+    position: absolute;
+    top: 52px; left: 0; right: 0;
+    flex-direction: column;
+    background: rgba(8, 8, 16, 0.98);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 0;
+    z-index: 999;
+    gap: 0;
+  }
+  .ck-nav-links.open { display: flex; }
+  .ck-nav-link { padding: 12px 22px; font-size: 0.88rem; display: block; }
+  .ck-nav-link-cta { border-left: none; border-right: none; border-radius: 0; }
+
+  /* Hub: let page scroll naturally (no fixed-height inner scroll area) */
+  .hub-app { height: auto; min-height: calc(100vh - 52px); overflow: visible; }
+  .hub-body { flex-direction: column; overflow: visible; }
+  .hub-main { overflow-y: visible; padding: 14px 14px; flex: none; }
+
+  /* Chat: full width below content (not a fixed sidebar) */
+  .hub-sidebar {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border);
+    height: 60vh;
+    max-height: 600px;
+  }
+  .chat-resize-handle { display: none; }
+  .chat-msgs { padding: 10px 12px; }
+  .chat-msg, .chat-sys { font-size: 0.85rem; }
+  .chat-input-row { padding: 8px; gap: 6px; }
+  .chat-input-row input { font-size: 16px; /* prevent iOS zoom on focus */ }
+
+  /* Tabs: horizontal scroll row */
+  .hub-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .hub-tabs::-webkit-scrollbar { display: none; }
+
+  /* HUD: tighten */
+  .hub-hud { padding: 6px 12px; gap: 6px; }
+  .hud-stat { font-size: 0.72rem; margin-right: 8px; }
+
+  /* Sitrep: smaller text */
+  .hub-sitrep { font-size: 0.82rem; padding: 8px 14px; }
+
+  /* Leaderboard: 3 columns, drop Kills column */
+  .score-hdr, .score-row { grid-template-columns: 36px 1fr 80px; }
+  .score-hdr > *:last-child, .score-row > *:last-child { display: none; }
+
+  /* Machine cards: allow narrower on small phones */
+  .tgrid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+
+  /* Landing hero */
+  .hero { padding: 40px 16px 32px; min-height: 0; }
+
+  /* Forms: full-width submit button */
+  .btn-mag { display: block; text-align: center; width: 100%; }
+
+  /* Profile action buttons (fixed top-right) */
+  .profile-mine-actions { flex-wrap: wrap; gap: 4px; top: 58px; right: 8px; }
+  .profile-mine-actions a { padding: 6px 10px; font-size: 0.6rem; }
+
+  /* Hub footer: smaller */
+  .hub-footer { font-size: 0.72rem; padding: 6px 14px; }
+}
+
+/* Profile editor */
+.profile-editor {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 48px);
+  overflow: hidden;
+}
+.profile-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.profile-editor-split {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 900px) {
+  .profile-editor-split { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+}
+.profile-editor-form {
+  overflow-y: auto;
+  padding: 16px;
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+}
+.editor-section {
+  margin-bottom: 20px;
+}
+.editor-section h3 {
+  font-family: var(--hud);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  margin-bottom: 10px;
+}
+.editor-section label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--txt-dim);
+  margin: 8px 0 4px;
+}
+.editor-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--txt);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  padding: 8px 10px;
+}
+.editor-input { transition: border-color 0.12s ease, box-shadow 0.12s ease; }
+.editor-input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan-dim), 0 0 12px rgba(34, 211, 238, 0.14); }
+.editor-textarea { resize: vertical; min-height: 80px; }
+.editor-css { font-size: 0.72rem; line-height: 1.5; }
+.editor-hex { width: 88px; margin-left: 8px; flex: 1; }
+.editor-hint { font-size: 0.68rem; color: var(--txt-dim); }
+.editor-msg { color: var(--green); font-size: 0.8rem; margin-top: 12px; }
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 6px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  cursor: pointer;
+}
+.theme-swatch.active { border-color: var(--mag); }
+.theme-swatch span:first-child { height: 14px; }
+.theme-swatch span:nth-child(2) { height: 6px; }
+.theme-name { font-size: 0.58rem; color: var(--txt-dim); margin-top: 4px; text-align: left; }
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.color-row label { flex: 1; margin: 0; min-width: 100px; }
+.color-row input[type=color] { width: 36px; height: 28px; border: none; padding: 0; cursor: pointer; }
+.profile-editor-preview {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg);
+}
+.preview-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--txt-dim);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.preview-frame {
+  flex: 1;
+  overflow: auto;
+  border: 2px dashed var(--border);
+  margin: 12px;
+}
+
+/* Hub radio bar (synthwave/ambient streams, bottom of the hub). */
+.radio-bar {
+  height: 58px;
+  background: rgba(8, 8, 16, 0.97);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+.vu { display: flex; gap: 2px; align-items: flex-end; height: 20px; }
+.vu-bar { width: 3px; background: var(--border); transition: height 0.1s; }
+.play-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--cyan);
+  cursor: pointer;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.play-btn.playing {
+  background: var(--mag);
+  border-color: var(--mag);
+  color: var(--bg);
+  box-shadow: 0 0 10px rgba(232, 52, 198, 0.5);
+}
+.s-btn {
+  font-size: 0.62rem;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--txt-dim);
+  cursor: pointer;
+}
+.s-btn.active { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+.vol-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.vol-wrap input[type=range] { width: 80px; accent-color: var(--cyan); }
+@media (max-width: 640px) {
+  .radio-bar { padding: 0 10px; gap: 8px; }
+  .vol-wrap { display: none; }
+}

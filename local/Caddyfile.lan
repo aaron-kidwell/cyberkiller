@@ -1,0 +1,13 @@
+# LAN reverse proxy - exposes web + API on a single port for LAN players
+# Web frontend:  http://192.168.1.129:8081
+# API calls are proxied so the same origin works
+
+:8081 {
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy ck-control:8080
+    }
+    handle {
+        reverse_proxy ck-web:3000
+    }
+}

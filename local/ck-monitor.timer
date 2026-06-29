@@ -1,0 +1,10 @@
+[Unit]
+Description=Run CyberKiller monitor every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=60s
+Unit=ck-monitor.service
+
+[Install]
+WantedBy=timers.target

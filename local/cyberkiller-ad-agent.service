@@ -1,0 +1,17 @@
+[Unit]
+Description=CyberKiller AD Reset Agent
+After=network.target
+
+[Service]
+Type=simple
+# Override VAGRANT_DIR in ~/.config/cyberkiller/ad-agent.env if your path differs
+EnvironmentFile=-%h/.config/cyberkiller/ad-agent.env
+ExecStart=/usr/bin/python3 %h/Projects/cyberkiller/local/ad-reset-agent.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ck-ad-agent
+
+[Install]
+WantedBy=default.target

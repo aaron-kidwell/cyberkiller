@@ -1,0 +1,7 @@
+{
+  "10.66.20.205": {"name": "casterlyrock", "difficulty": "hard",   "vector": "unquoted service path"},
+  "10.66.20.206": {"name": "stonedoor",    "difficulty": "medium", "vector": "unattend.xml plaintext creds"},
+  "10.66.20.207": {"name": "dragonstone",  "difficulty": "easy",   "vector": "weak SSH user + sudo NOPASSWD"},
+  "10.66.20.208": {"name": "deepwood",     "difficulty": "medium", "vector": "SUID find binary"},
+  "10.66.20.209": {"name": "pentos",       "difficulty": "hard",   "vector": "exposed docker daemon TCP/2375"}
+}

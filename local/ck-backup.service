@@ -1,0 +1,13 @@
+[Unit]
+Description=CyberKiller daily backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=aaron
+# Off-host push: set CK_ALERT_WEBHOOK in /etc/cyberkiller-backup.env after running `rclone config`.
+EnvironmentFile=-/etc/cyberkiller-backup.env
+ExecStart=/home/aaron/Projects/cyberkiller/local/backup.sh
+StandardOutput=append:/var/log/ck-backup.log
+StandardError=append:/var/log/ck-backup.log

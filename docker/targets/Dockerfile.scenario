@@ -1,0 +1,20 @@
+FROM debian:bookworm-slim
+
+ARG SCENARIO=neon-dvwa
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    ca-certificates openssh-server apache2 libapache2-mod-php php php-mysqli \
+    iproute2 curl wget supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY docker/targets/entrypoint.sh /entrypoint.sh
+COPY docker/targets/supervisord.conf /etc/supervisor/conf.d/ck.conf
+COPY docker/targets/scenarios/${SCENARIO}/ /var/www/html/
+# Optional per-scenario privesc setup (SUID, sudoers, etc.)
+RUN if [ -f /var/www/html/ck-init.sh ]; then cp /var/www/html/ck-init.sh /ck-init.sh && chmod +x /ck-init.sh; fi
+
+RUN chmod +x /entrypoint.sh && mkdir -p /var/run/sshd && ssh-keygen -A \
+    && chown -R www-data:www-data /var/www/html
+
+EXPOSE 22 80
+ENTRYPOINT ["/entrypoint.sh"]

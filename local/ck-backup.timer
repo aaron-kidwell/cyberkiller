@@ -1,0 +1,10 @@
+[Unit]
+Description=Run CyberKiller backup daily at 04:15 UTC
+
+[Timer]
+OnCalendar=*-*-* 04:15:00
+Persistent=true
+Unit=ck-backup.service
+
+[Install]
+WantedBy=timers.target

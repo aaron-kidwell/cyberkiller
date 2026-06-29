@@ -1,0 +1,15 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    ca-certificates openssh-server apache2 php php-mysqli mariadb-server \
+    iproute2 curl wget supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY docker/targets/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+COPY docker/targets/supervisord.conf /etc/supervisor/conf.d/ck.conf
+
+RUN mkdir -p /var/run/sshd && ssh-keygen -A
+
+EXPOSE 22 80
+ENTRYPOINT ["/entrypoint.sh"]

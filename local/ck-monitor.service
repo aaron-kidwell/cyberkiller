@@ -1,0 +1,11 @@
+[Unit]
+Description=CyberKiller uptime monitor (single check)
+
+[Service]
+Type=oneshot
+User=aaron
+# Set CK_ALERT_WEBHOOK in /etc/cyberkiller-monitor.env with your Discord webhook URL.
+EnvironmentFile=-/etc/cyberkiller-monitor.env
+ExecStart=/home/aaron/Projects/cyberkiller/local/monitor.sh
+StandardOutput=append:/var/log/ck-monitor.log
+StandardError=append:/var/log/ck-monitor.log
