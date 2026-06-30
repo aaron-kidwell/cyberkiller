@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CyberKiller - self-hosted King-of-the-Hill hacking arena</title>
+<meta name="description" content="A free, self-hosted, competitive King-of-the-Hill hacking arena. Stand up real vulnerable boxes, turn your team loose, and climb a live leaderboard. One command, any Docker image, nothing for players to install.">
+<meta property="og:title" content="CyberKiller - self-hosted King-of-the-Hill hacking arena">
+<meta property="og:description" content="Free, self-hosted, competitive hacking arena. Everything you like about TryHackMe KOTH, on infrastructure you own.">
+<meta property="og:image" content="https://cyberkiller.net/ghost.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="ghost.png">
+<style>
+  :root{
+    --bg:#0a0812; --bg2:#120c1e; --panel:#160f24; --border:#2a1f3d;
+    --mag:#e834c6; --cyan:#22d3ee; --green:#00c853; --txt:#e7e2f0; --dim:#9a8fb0;
+    --mono:"SFMono-Regular",ui-monospace,"Cascadia Code","Fira Code",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--mono);line-height:1.6;
+    background-image:radial-gradient(circle at 20% -10%,rgba(232,52,198,.14),transparent 55%),
+      radial-gradient(circle at 90% 10%,rgba(34,211,238,.10),transparent 45%);}
+  a{color:var(--cyan);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+  .hero{text-align:center;padding:64px 22px 40px}
+  .hero img.ghost{width:128px;height:auto;filter:drop-shadow(0 0 22px rgba(232,52,198,.55))}
+  .hero img.word{width:min(440px,86%);height:auto;display:block;margin:14px auto 0}
+  .eyebrow{font-size:.72rem;letter-spacing:.28em;color:var(--cyan);margin:18px 0 0}
+  .tag{font-size:1.18rem;color:var(--txt);max-width:680px;margin:14px auto 0;font-weight:600}
+  .sub{color:var(--dim);max-width:640px;margin:12px auto 0;font-size:.96rem}
+  .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+  .btn{display:inline-block;padding:12px 22px;border:1px solid var(--mag);color:var(--mag);
+    font-size:.82rem;letter-spacing:.06em;border-radius:3px;background:transparent;transition:.18s}
+  .btn:hover{background:var(--mag);color:var(--bg);text-decoration:none;box-shadow:0 0 18px rgba(232,52,198,.5)}
+  .btn.alt{border-color:var(--cyan);color:var(--cyan)}
+  .btn.alt:hover{background:var(--cyan);color:var(--bg);box-shadow:0 0 18px rgba(34,211,238,.4)}
+  .badges{margin-top:24px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .badge{font-size:.62rem;letter-spacing:.12em;color:var(--dim);border:1px solid var(--border);
+    padding:4px 9px;border-radius:2px}
+  section{padding:34px 0;border-top:1px solid var(--border)}
+  h2{font-size:.7rem;letter-spacing:.22em;color:var(--mag);margin:0 0 16px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--border);border-left:2px solid var(--cyan);
+    padding:16px 18px;border-radius:3px}
+  .card.m{border-left-color:var(--mag)}
+  .card h3{margin:0 0 6px;font-size:.92rem;color:var(--txt)}
+  .card p{margin:0;font-size:.86rem;color:var(--dim)}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:6px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--cyan);font-size:.66rem;letter-spacing:.1em}
+  td.ck{color:var(--txt)}
+  td.thm{color:var(--dim)}
+  pre{background:#080610;border:1px solid var(--border);border-left:2px solid var(--green);
+    padding:14px 16px;border-radius:3px;overflow-x:auto;font-size:.84rem;color:var(--green)}
+  pre .c{color:var(--dim)}
+  .note{font-size:.8rem;color:var(--dim);background:rgba(232,52,198,.06);border:1px solid var(--border);
+    border-left:2px solid var(--mag);padding:12px 14px;border-radius:3px;margin-top:18px}
+  footer{padding:30px 22px 56px;text-align:center;color:var(--dim);font-size:.78rem;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+  <header class="hero">
+    <img class="ghost" src="ghost.png" alt="CyberKiller ghost">
+    <img class="word" src="logo.png" alt="CYBERKILLER">
+    <p class="eyebrow">SELF-HOSTED &middot; KING OF THE HILL &middot; FREE</p>
+    <p class="tag">A self-hosted, competitive King-of-the-Hill hacking arena.</p>
+    <p class="sub">Stand up real vulnerable boxes, turn your team loose, and watch a live
+      leaderboard light up. Everything you like about TryHackMe KOTH &mdash; the throne, the
+      scramble for root, the board &mdash; on infrastructure <em>you</em> own, with <em>any</em>
+      box you want, and nothing for players to install.</p>
+    <div class="cta">
+      <a class="btn" href="https://github.com/aaron-kidwell/cyberkiller">View on GitHub &rarr;</a>
+      <a class="btn alt" href="https://github.com/aaron-kidwell/cyberkiller/blob/main/docs/GUIDE.md">Read the guide</a>
+    </div>
+    <div class="badges">
+      <span class="badge">AGPL-3.0</span>
+      <span class="badge">ONE COMMAND</span>
+      <span class="badge">ANY DOCKER IMAGE</span>
+      <span class="badge">NO PLAYER CLIENT</span>
+      <span class="badge">Go + Next.js</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <h2>WHY TEAMS RUN IT</h2>
+      <div class="grid">
+        <div class="card m"><h3>&#128081; Automated King of the Hill</h3><p>Flip any box to KOTH mode and the platform tracks the throne itself. Get root, write your handle to the flag file, hold it &mdash; points tick up live. No <code>koth</code> client to run.</p></div>
+        <div class="card"><h3>&#127919; Any box, in seconds</h3><p>Add a target by registry reference or upload a <code>docker&nbsp;save</code> tarball. Flags auto-plant, even on images that know nothing about CyberKiller.</p></div>
+        <div class="card m"><h3>&#127988; Capture by handle</h3><p>Prove a capture by writing your hub handle into the flag file &mdash; the server reads it and awards you automatically. First blood, kills, live board.</p></div>
+        <div class="card"><h3>&#129505; Real chains</h3><p>The bundled MERIDIAN scenario is a designed 10-box pivot: breach the DMZ, loot creds, hop inward, root the network.</p></div>
+        <div class="card m"><h3>&#128272; Private &amp; yours</h3><p>Your players, your network, your data. Run it on a laptop, a VPS, or an air-gapped lab.</p></div>
+        <div class="card"><h3>&#128640; One command</h3><p><code>./deploy.sh</code> builds everything and prints the hub URL + an invite code. Tear it down or wipe it just as fast.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>VS TRYHACKME KOTH</h2>
+      <table>
+        <thead><tr><th></th><th>TryHackMe KOTH</th><th>CyberKiller</th></tr></thead>
+        <tbody>
+          <tr><td>Hosting</td><td class="thm">Their cloud</td><td class="ck">Your box &mdash; laptop, VPS, air-gapped lab</td></tr>
+          <tr><td>Cost</td><td class="thm">Subscription</td><td class="ck">Free, AGPL-3.0</td></tr>
+          <tr><td>Player client</td><td class="thm">Run their <code>koth</code> script</td><td class="ck">None &mdash; write your handle to the flag file</td></tr>
+          <tr><td>Boxes</td><td class="thm">Fixed set they ship</td><td class="ck">Any Docker image &mdash; reference or upload</td></tr>
+          <tr><td>Scenarios</td><td class="thm">One box at a time</td><td class="ck">Designed chains (10-box MERIDIAN) + single hills</td></tr>
+          <tr><td>Privacy</td><td class="thm">Shared public servers</td><td class="ck">Private &mdash; your network, your data</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>QUICK START</h2>
+      <pre>git clone https://github.com/aaron-kidwell/cyberkiller && cd cyberkiller
+./deploy.sh
+<span class="c"># prints the hub URL, an admin login, and an invite code.</span>
+<span class="c"># targets come up on your LAN; nmap them and go.</span></pre>
+      <div class="note"><strong>Heads up:</strong> CyberKiller deploys deliberately vulnerable
+        systems (real CVEs). Run it only in an isolated lab you control and are authorized to
+        test &mdash; never expose the targets to the internet.</div>
+    </section>
+  </main>
+
+  <footer>
+    CyberKiller &middot; self-hosted competitive hacking arena &middot;
+    <a href="https://github.com/aaron-kidwell/cyberkiller">GitHub</a> &middot;
+    <a href="https://github.com/aaron-kidwell/cyberkiller/blob/main/docs/GUIDE.md">Guide</a> &middot;
+    <a href="https://github.com/aaron-kidwell/cyberkiller/blob/main/LICENSE">AGPL-3.0</a>
+  </footer>
+</body>
+</html>
