@@ -4,7 +4,8 @@
 #   ./deploy.sh            bring the range up (generates .env on first run)
 #   ./deploy.sh update     pull latest, rebuild, restart (keeps data)
 #   ./deploy.sh teardown   stop everything cleanly (keeps data + images)
-#   ./deploy.sh delete     remove everything: containers, target images, volumes (DB included)
+#   ./deploy.sh delete     remove everything: containers, images, volumes (DB included),
+#                          build cache, compiled artifacts, and .env (credentials)
 #
 # Requirements: Docker + the compose plugin. Nothing else - the Go API is built
 # inside a container, so you do not need Go installed.
@@ -242,15 +243,34 @@ cmd_teardown() {
 
 cmd_delete() {
   need_docker
-  printf '\033[0;31mThis removes ALL containers, target images, and volumes (including the database). Type DELETE to confirm: \033[0m'
+  printf '\033[0;31mThis removes EVERYTHING: all containers, target images, volumes (database included),\nthe build cache, compiled artifacts, and your .env (credentials). Type DELETE to confirm: \033[0m'
   read -r ans
   [ "$ans" = "DELETE" ] || { echo "aborted"; exit 0; }
-  [ -f "$ENV_FILE" ] && compose down -v --remove-orphans || true
+
+  # Containers + compose-managed volumes/networks. --env-file may be gone, so fall
+  # back to removing the named containers directly when compose can't run.
+  [ -f "$ENV_FILE" ] && compose down -v --remove-orphans >/dev/null 2>&1 || true
+  docker rm -f ck-control ck-web ck-admin ck-db ck-redis >/dev/null 2>&1 || true
+  c_info "Removing target containers + the arena network ..."
   docker ps -aq --filter network=ck-arena | xargs -r docker rm -f >/dev/null 2>&1 || true
   docker network rm ck-arena >/dev/null 2>&1 || true
+
   c_info "Removing CyberKiller images ..."
   docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^cyberkiller/' | xargs -r docker rmi -f >/dev/null 2>&1 || true
-  c_ok "Pruned. (.env kept - delete it by hand to reset credentials.)"
+
+  # Named volumes, matched by name under any compose-project prefix - so a volume
+  # left behind by an older project name (e.g. local_ck-uploads) is cleaned up too.
+  c_info "Removing data volumes ..."
+  docker volume ls -q | grep -E '(^|_)ck-(pg|uploads)$' | xargs -r docker volume rm -f >/dev/null 2>&1 || true
+
+  # Build cache + compiled artifacts: a clean slate, and it clears any poisoned
+  # layer from an interrupted build (the cause of "next: not found" on rebuild).
+  c_info "Clearing build cache + compiled artifacts ..."
+  docker builder prune -af >/dev/null 2>&1 || true
+  rm -rf "$ROOT/build" >/dev/null 2>&1 || true
+
+  rm -f "$ENV_FILE"
+  c_ok "Deleted everything. Next ./deploy.sh starts fresh (new .env + credentials)."
 }
 
 case "${1:-up}" in
