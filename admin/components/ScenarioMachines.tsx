@@ -6,16 +6,16 @@ import { useState } from 'react'
 export type SMachine = {
   key: string          // unique row id (machine id or arena_ip)
   name: string
-  subtitle?: string    // domain (GOAD) / role (MERIDIAN)
+  subtitle?: string    // role (e.g. a MERIDIAN box's function)
   arena_ip: string
-  localIP?: string     // direct LAN/VM IP (hit it without the arena VPN)
+  localIP?: string     // direct LAN IP, when targets run on the LAN (ipvlan mode)
   tier: string
   healthy: boolean
   king_handle?: string
   user_flag_by?: string
   badge?: string       // 'DC' | 'Linux' | 'Member' | role
   userCap: boolean
-  adminCap?: boolean   // GOAD only
+  adminCap?: boolean   // optional admin/privileged capture flag
   rootCap: boolean
 }
 

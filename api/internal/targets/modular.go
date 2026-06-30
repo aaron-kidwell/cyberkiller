@@ -158,6 +158,20 @@ func SpinImage(ctx context.Context, imageID string) error {
 	go func() {
 		cname := fmt.Sprintf("ck-%s", machineID.String()[:8])
 		exec.Command("docker", "rm", "-f", cname).Run()
+		// failWith records a spin failure the operator can actually see: it removes
+		// any container, posts a TARGET FAILED ticker event with the reason, and
+		// frees the arena IP + expires the row. Every failure branch routes through
+		// here so a spin never dies silently (only a buried control-plane log line).
+		failWith := func(reason string) {
+			if len(reason) > 200 {
+				reason = reason[:200]
+			}
+			log.Printf("[target] %s spin failed: %s", name, reason)
+			exec.Command("docker", "rm", "-f", cname).Run()
+			db.Pool.Exec(context.Background(), `INSERT INTO ticker_events (message) VALUES ($1)`,
+				fmt.Sprintf("TARGET FAILED: %s - %s", name, reason))
+			failSpin(machineID, arenaIP)
+		}
 		ssh := fmt.Sprintf("%d", sshPort)
 		web := fmt.Sprintf("%d", webPort)
 		// Real IP on the ck-arena bridge: players reach it directly (no DNAT).
@@ -169,22 +183,30 @@ func SpinImage(ctx context.Context, imageID string) error {
 			"-e", "CK_ROOT_FLAG=" + rootFlag}
 		args = append(args, image)
 		if out, err := exec.Command("docker", args...).CombinedOutput(); err != nil {
-			log.Printf("[target] run %s: %v %s", cname, err, out)
-			failSpin(machineID, arenaIP)
+			msg := strings.TrimSpace(string(out))
+			if msg == "" {
+				msg = err.Error()
+			}
+			// e.g. distroless images with no entrypoint fail here ("no command specified").
+			failWith("the image failed to start (check the reference and that it has an entrypoint): " + msg)
 			return
 		}
 
 		if needsInject {
-			plantFlags(cname, userFlagPath, rootFlagPath)
+			if err := plantFlags(cname, userFlagPath, rootFlagPath); err != nil {
+				// Most common cause: the image has no shell, so the flags were never
+				// planted and the box would be uncapturable. Fail loudly instead of
+				// going 'active' as a phantom target the admin thinks players can take.
+				failWith("flag injection needs a shell (/bin/sh) in the image. Use a shell-based image, or add it with flag injection off as a web-only target.")
+				return
+			}
 		}
 
 		// Readiness: the container is running and at least one of its service
 		// ports answers on its arena IP. Targets can be SSH-only, web-only, or
 		// both, so we don't demand a specific port - just that it's serving.
 		if !waitTargetReady(cname, arenaIP, ssh, web) {
-			log.Printf("[target] %s never became reachable on %s (%s/%s)", cname, arenaIP, ssh, web)
-			exec.Command("docker", "rm", "-f", cname).Run()
-			failSpin(machineID, arenaIP)
+			failWith(fmt.Sprintf("the container started but no service port answered on %s within the timeout (check ssh_port/web_port).", arenaIP))
 			return
 		}
 		db.Pool.Exec(context.Background(), `
@@ -251,7 +273,10 @@ const (
 // SSH are created - the box's own vulnerability is the foothold. The user flag is
 // world-writable (any foothold can drop their handle); the root flag is root-only;
 // the KOTH throne file is created for hold-mode scoring.
-func plantFlags(container, userPath, rootPath string) {
+// Returns an error if the inject couldn't run at all - most often because the
+// image ships no shell (distroless/minimal), so `docker exec sh` fails and no
+// flags get planted. Callers surface this rather than leaving an uncapturable box.
+func plantFlags(container, userPath, rootPath string) error {
 	if userPath == "" {
 		userPath = defaultUserFlagPath
 	}
@@ -272,7 +297,10 @@ chmod 600 '%s' 2>/dev/null
 chmod 644 /root/king.txt 2>/dev/null
 true
 `, userPath, userPlaceholder, userPath, userPath, rootPath, rootPlaceholder, rootPath, rootPath)
-	exec.Command("docker", "exec", "-u", "0", container, "sh", "-c", script).Run()
+	if out, err := exec.Command("docker", "exec", "-u", "0", container, "sh", "-c", script).CombinedOutput(); err != nil {
+		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
 }
 
 // StopTarget stops a live modular target, frees its arena IP, and expires the row.

@@ -5,8 +5,8 @@ must match the real account on the next box. Keep this file in sync with the
 `ck-init.sh` scripts - if you change a password here, change it in both boxes.
 
 Theme: **Meridian Logistics**, a fictional freight/logistics megacorp. Internal
-DNS suffix `meridian.corp`. Arena band `10.66.20.50–59` (only one scenario is live
-at a time, so this never collides with GOAD or the random KOTH pool).
+DNS suffix `meridian.corp`. Arena band `10.66.20.50` and up, on the isolated
+`ck-arena` network.
 
 All boxes: SSH on 22, a status page on 80 (so the health gate passes), plus the
 real service port for that role. Flags are the standard handle-based
@@ -24,8 +24,8 @@ KOTH flag scanner. "Loot" is what a player finds that unlocks the next hop.
 ## Topology & entry
 
 ```
-            players (WireGuard)
-                  │  (only .50 answers from the player subnet - Phase D)
+            players (arena network)
+                  │  (the DMZ web app at .50 is the only intended entry point)
                   ▼
    .50 mer-web01  DMZ web app  ── pivot ──┐
                                           ▼

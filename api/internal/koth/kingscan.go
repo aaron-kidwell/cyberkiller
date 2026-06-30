@@ -159,9 +159,9 @@ func awardCapture(ctx context.Context, boxID, ip, img, handle, kind string) {
 	if err := scoring.AwardKill(ctx, uid, pts, kind, nil, &kid); err != nil {
 		return
 	}
-	if firstBlood {
-		db.Pool.Exec(ctx, `UPDATE kills SET first_blood=true WHERE koth_id=$1::uuid AND attacker_id=$2 AND kind=$3`, boxID, uid, kind)
-	}
+	// First blood is recorded on the capture_log row below (and derived live from
+	// the earliest kill per box+kind elsewhere); the kills table has no first_blood
+	// column, so there is nothing to backfill here.
 	if kind == "user_flag" {
 		db.Pool.Exec(ctx, `UPDATE koth_machines SET user_flag_handle=$1 WHERE id=$2::uuid`, handle, boxID)
 	}

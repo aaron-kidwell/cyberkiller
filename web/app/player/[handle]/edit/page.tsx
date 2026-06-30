@@ -287,7 +287,7 @@ export default function ProfileEditPage() {
                 className="editor-input"
                 value={draft.featured_skills ?? ''}
                 onChange={e => update('featured_skills', e.target.value)}
-                placeholder="SQLi, XSS, LFI, SUID, WireGuard, Nmap…"
+                placeholder="SQLi, XSS, LFI, SUID, Pivoting, Nmap…"
               />
             </section>
           )}

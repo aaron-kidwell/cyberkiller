@@ -564,8 +564,7 @@ export function HubApp() {
 
   const targets = machines.filter(m => m.type === 'target')
   const hills = machines.filter(m => m.type === 'koth')
-  // Corp (MERIDIAN) boxes are Linux network nodes - render them with the same
-  // king/flags/connect treatment as GOAD's Linux hosts.
+  // Corp (MERIDIAN) boxes are Linux network nodes - rendered with king/flags/connect.
   const adMachines = machines.filter(m => m.type === 'corp')
   const ttlPct = (secs: number, max = 2700) => Math.min(100, Math.max(0, (secs / max) * 100))
 

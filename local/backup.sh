@@ -20,7 +20,6 @@ RCLONE_REMOTE="${RCLONE_REMOTE:-ckbackup:cyberkiller-backups}"
 DB_CONTAINER="${DB_CONTAINER:-ck-db}"
 DB_USER="${DB_USER:-cyberkiller}"
 DB_NAME="${DB_NAME:-cyberkiller}"
-WG_KEYS_DIR="${WG_KEYS_DIR:-/home/aaron/Projects/cyberkiller/local/wg-keys}"
 UPLOADS_VOL="${UPLOADS_VOL:-local_ck-uploads}"
 
 STAMP="$(date -u +%Y-%m-%d_%H%M%S)"
@@ -37,22 +36,16 @@ docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" -F c "$DB_NAME" > "$TMP/db.dum
 SIZE=$(du -h "$TMP/db.dump" | cut -f1)
 log "  db.dump: $SIZE"
 
-# ── 2. WireGuard keys (critical, no recreation possible) ────────────────────
-if [ -d "$WG_KEYS_DIR" ]; then
-  log "snapshotting wireguard keys..."
-  tar -C "$(dirname "$WG_KEYS_DIR")" -czf "$TMP/wg-keys.tar.gz" "$(basename "$WG_KEYS_DIR")"
-fi
-
-# ── 3. Uploads volume (avatars, screenshots, profile bgs) ───────────────────
+# ── 2. Uploads volume (avatars, screenshots, profile bgs) ───────────────────
 log "snapshotting uploads volume..."
 docker run --rm \
   -v "$UPLOADS_VOL":/data:ro \
   -v "$TMP":/out \
   alpine sh -c 'tar -C /data -czf /out/uploads.tar.gz . 2>/dev/null || true'
 
-# ── 4. Bundle ───────────────────────────────────────────────────────────────
+# ── 3. Bundle ───────────────────────────────────────────────────────────────
 BUNDLE="$BACKUP_DIR/ck-backup-$STAMP.tar"
-tar -C "$TMP" -cf "$BUNDLE" db.dump wg-keys.tar.gz uploads.tar.gz 2>/dev/null || \
+tar -C "$TMP" -cf "$BUNDLE" db.dump uploads.tar.gz 2>/dev/null || \
   tar -C "$TMP" -cf "$BUNDLE" db.dump
 SIZE=$(du -h "$BUNDLE" | cut -f1)
 log "bundle: $BUNDLE ($SIZE)"

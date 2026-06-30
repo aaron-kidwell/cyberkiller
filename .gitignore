@@ -1,7 +1,4 @@
 build/
-local/wg-keys/
-local/wg0.conf
-local/hub_public.key
 node_modules/
 .next/
 *.log
