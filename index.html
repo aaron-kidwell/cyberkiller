@@ -57,6 +57,12 @@
   pre .c{color:var(--dim)}
   .note{font-size:.8rem;color:var(--dim);background:rgba(232,52,198,.06);border:1px solid var(--border);
     border-left:2px solid var(--mag);padding:12px 14px;border-radius:3px;margin-top:18px}
+  .shots{display:flex;flex-direction:column;gap:14px}
+  .shot{border:1px solid var(--border);border-radius:5px;overflow:hidden;background:#080610;
+    box-shadow:0 0 30px rgba(0,0,0,.5)}
+  .shot img{width:100%;height:auto;display:block}
+  .shot .cap{font-size:.76rem;color:var(--dim);padding:9px 12px;border-top:1px solid var(--border)}
+  .shot .cap b{color:var(--cyan)}
   footer{padding:30px 22px 56px;text-align:center;color:var(--dim);font-size:.78rem;border-top:1px solid var(--border)}
 </style>
 </head>
@@ -109,6 +115,20 @@
           <tr><td>Privacy</td><td class="thm">Shared public servers</td><td class="ck">Private &mdash; your network, your data</td></tr>
         </tbody>
       </table>
+    </section>
+
+    <section>
+      <h2>SEE IT LIVE</h2>
+      <div class="shots">
+        <figure class="shot" style="margin:0">
+          <img src="screen-radar.png" alt="CyberKiller hub radar showing live target boxes, throne status and the activity ticker">
+          <figcaption class="cap"><b>The hub.</b> Live radar of every box on the range &mdash; tier, points, throne holder &mdash; with a real-time activity ticker, leaderboard, and chat.</figcaption>
+        </figure>
+        <figure class="shot" style="margin:0">
+          <img src="screen-scoring.png" alt="CyberKiller scoring tab explaining handle-write capture">
+          <figcaption class="cap"><b>Capture by handle.</b> Get a foothold, write your handle into the flag file, and the platform awards you automatically &mdash; no submission box, no instructor.</figcaption>
+        </figure>
+      </div>
     </section>
 
     <section>
