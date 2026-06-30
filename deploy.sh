@@ -116,17 +116,45 @@ build_targets() {
   c_ok "Target images built"
 }
 
+# refresh_host_ip keeps the baked LAN address current. gen_env only writes the
+# host IP on first run, so moving this machine to another network (laptop hops
+# WiFi, DHCP lease changes) leaves a stale API_URL/CORS_ORIGINS and players can no
+# longer reach the hub. On every `up` we re-detect the primary IP and, when the
+# baked URL is a plain http://<private-LAN-IP> that no longer matches, rewrite it.
+# Custom domains and https:// configs are left untouched.
+refresh_host_ip() {
+  [ -f "$ENV_FILE" ] || return 0
+  local cur_url cur_ip cur_re new_ip
+  cur_url="$(grep -E '^API_URL=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ' || true)"
+  case "$cur_url" in http://*) ;; *) return 0 ;; esac   # only manage plain-http URLs
+  cur_ip="${cur_url#http://}"; cur_ip="${cur_ip%%:*}"
+  # Only refresh when the baked host is an RFC1918 LAN IP - never a domain or localhost.
+  case "$cur_ip" in
+    10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) ;;
+    *) return 0 ;;
+  esac
+  new_ip="$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')"
+  [ -n "$new_ip" ] || return 0
+  [ "$new_ip" = "$cur_ip" ] && return 0
+  c_info "Host IP changed ($cur_ip -> $new_ip) - refreshing API_URL + CORS_ORIGINS in .env."
+  cur_re="${cur_ip//./\\.}"
+  sed -i -E "/^(API_URL|CORS_ORIGINS)=/ s/${cur_re}/${new_ip}/g" "$ENV_FILE"
+}
+
 # ensure_arena_network creates the ck-arena network per ARENA_MODE before compose
 # runs. lan -> ipvlan L2 on the physical NIC (real LAN IPs, no routing); bridge ->
 # private 10.66.20.0/24. Idempotent; recreates only if the driver changed and no
 # containers are attached. Falls back to bridge if ipvlan can't be set up.
 ensure_arena_network() {
   local mode parent subnet gw prefix want cur
-  mode="$(grep -E '^ARENA_MODE=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ')"; [ -z "$mode" ] && mode="bridge"
-  parent="$(grep -E '^ARENA_PARENT=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ')"
-  subnet="$(grep -E '^ARENA_SUBNET=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ')"
-  gw="$(grep -E '^ARENA_GATEWAY=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ')"
-  prefix="$(grep -E '^ARENA_IP_PREFIX=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ')"; [ -z "$prefix" ] && prefix="10.66.20"
+  # Each read tolerates a missing key: grep exits non-zero when the var is absent,
+  # which under `set -e` + pipefail would kill the whole script - and an older .env
+  # that predates the ARENA_* block is the common case. `|| true` keeps us going.
+  mode="$(grep -E '^ARENA_MODE=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ' || true)"; [ -z "$mode" ] && mode="bridge"
+  parent="$(grep -E '^ARENA_PARENT=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ' || true)"
+  subnet="$(grep -E '^ARENA_SUBNET=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ' || true)"
+  gw="$(grep -E '^ARENA_GATEWAY=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ' || true)"
+  prefix="$(grep -E '^ARENA_IP_PREFIX=' "$ENV_FILE" | cut -d= -f2- | tr -d ' ' || true)"; [ -z "$prefix" ] && prefix="10.66.20"
   [ "$mode" = "lan" ] && want="ipvlan" || want="bridge"
 
   cur="$(docker network inspect ck-arena --format '{{.Driver}}' 2>/dev/null || true)"
@@ -154,6 +182,7 @@ ensure_arena_network() {
 cmd_up() {
   need_docker
   gen_env
+  refresh_host_ip
   ensure_arena_network
   build_api
   build_targets
@@ -188,8 +217,15 @@ cmd_up() {
 # (the Postgres volume) is preserved. One command to update a running range.
 cmd_update() {
   if [ -d "$ROOT/.git" ]; then
-    c_info "Pulling latest code..."
-    git -C "$ROOT" pull --ff-only || c_die "git pull failed (stash/commit local changes first)"
+    # Only pull when the current branch tracks a remote (the normal clone case).
+    # A branch with no upstream - e.g. a local dev branch - can't `git pull`; warn
+    # and rebuild from the working tree rather than aborting the update.
+    if git -C "$ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1; then
+      c_info "Pulling latest code..."
+      git -C "$ROOT" pull --ff-only || c_die "git pull failed (stash/commit local changes first)"
+    else
+      c_info "Branch has no upstream - skipping pull, rebuilding from the current tree."
+    fi
   fi
   c_info "Rebuilding + restarting (data preserved)..."
   cmd_up
