@@ -73,9 +73,9 @@
     <p class="eyebrow">SELF-HOSTED &middot; KING OF THE HILL &middot; FREE</p>
     <p class="tag">A self-hosted, competitive King-of-the-Hill hacking arena.</p>
     <p class="sub">Stand up real vulnerable boxes, turn your team loose, and watch a live
-      leaderboard light up. Everything you like about TryHackMe KOTH &mdash; the throne, the
-      scramble for root, the board &mdash; on infrastructure <em>you</em> own, with <em>any</em>
-      box you want, and nothing for players to install.</p>
+      leaderboard light up. The throne, the scramble for root, the live board. All of it on
+      infrastructure <em>you</em> own, with <em>any</em> box you want, and nothing for
+      players to install.</p>
     <div class="cta">
       <a class="btn" href="https://github.com/aaron-kidwell/cyberkiller">View on GitHub &rarr;</a>
       <a class="btn alt" href="https://github.com/aaron-kidwell/cyberkiller/blob/main/docs/GUIDE.md">Read the guide</a>
@@ -93,9 +93,9 @@
     <section>
       <h2>WHY TEAMS RUN IT</h2>
       <div class="grid">
-        <div class="card m"><h3>&#128081; Automated King of the Hill</h3><p>Flip any box to KOTH mode and the platform tracks the throne itself. Get root, write your handle to the flag file, hold it &mdash; points tick up live. No <code>koth</code> client to run.</p></div>
+        <div class="card m"><h3>&#128081; Automated King of the Hill</h3><p>Flip any box to KOTH mode and the platform tracks the throne itself. Get root, write your handle to the flag file, hold it. Points tick up live. No <code>koth</code> client to run.</p></div>
         <div class="card"><h3>&#127919; Any box, in seconds</h3><p>Add a target by registry reference or upload a <code>docker&nbsp;save</code> tarball. Flags auto-plant, even on images that know nothing about CyberKiller.</p></div>
-        <div class="card m"><h3>&#127988; Capture by handle</h3><p>Prove a capture by writing your hub handle into the flag file &mdash; the server reads it and awards you automatically. First blood, kills, live board.</p></div>
+        <div class="card m"><h3>&#127988; Capture by handle</h3><p>Prove a capture by writing your hub handle into the flag file. The server reads it and awards you automatically. First blood, kills, live board.</p></div>
         <div class="card"><h3>&#129505; Real chains</h3><p>The bundled MERIDIAN scenario is a designed 10-box pivot: breach the DMZ, loot creds, hop inward, root the network.</p></div>
         <div class="card m"><h3>&#128272; Private &amp; yours</h3><p>Your players, your network, your data. Run it on a laptop, a VPS, or an air-gapped lab.</p></div>
         <div class="card"><h3>&#128640; One command</h3><p><code>./deploy.sh</code> builds everything and prints the hub URL + an invite code. Tear it down or wipe it just as fast.</p></div>
@@ -107,12 +107,12 @@
       <table>
         <thead><tr><th></th><th>TryHackMe KOTH</th><th>CyberKiller</th></tr></thead>
         <tbody>
-          <tr><td>Hosting</td><td class="thm">Their cloud</td><td class="ck">Your box &mdash; laptop, VPS, air-gapped lab</td></tr>
+          <tr><td>Hosting</td><td class="thm">Their cloud</td><td class="ck">Your box: laptop, VPS, air-gapped lab</td></tr>
           <tr><td>Cost</td><td class="thm">Subscription</td><td class="ck">Free, AGPL-3.0</td></tr>
-          <tr><td>Player client</td><td class="thm">Run their <code>koth</code> script</td><td class="ck">None &mdash; write your handle to the flag file</td></tr>
-          <tr><td>Boxes</td><td class="thm">Fixed set they ship</td><td class="ck">Any Docker image &mdash; reference or upload</td></tr>
+          <tr><td>Player client</td><td class="thm">Run their <code>koth</code> script</td><td class="ck">None. Write your handle to the flag file.</td></tr>
+          <tr><td>Boxes</td><td class="thm">Fixed set they ship</td><td class="ck">Any Docker image, by reference or upload</td></tr>
           <tr><td>Scenarios</td><td class="thm">One box at a time</td><td class="ck">Designed chains (10-box MERIDIAN) + single hills</td></tr>
-          <tr><td>Privacy</td><td class="thm">Shared public servers</td><td class="ck">Private &mdash; your network, your data</td></tr>
+          <tr><td>Privacy</td><td class="thm">Shared public servers</td><td class="ck">Private. Your network, your data.</td></tr>
         </tbody>
       </table>
     </section>
@@ -122,11 +122,11 @@
       <div class="shots">
         <figure class="shot" style="margin:0">
           <img src="screen-radar.png" alt="CyberKiller hub radar showing live target boxes, throne status and the activity ticker">
-          <figcaption class="cap"><b>The hub.</b> Live radar of every box on the range &mdash; tier, points, throne holder &mdash; with a real-time activity ticker, leaderboard, and chat.</figcaption>
+          <figcaption class="cap"><b>The hub.</b> Live radar of every box on the range (tier, points, throne holder) with a real-time activity ticker, leaderboard, and chat.</figcaption>
         </figure>
         <figure class="shot" style="margin:0">
           <img src="screen-scoring.png" alt="CyberKiller scoring tab explaining handle-write capture">
-          <figcaption class="cap"><b>Capture by handle.</b> Get a foothold, write your handle into the flag file, and the platform awards you automatically &mdash; no submission box, no instructor.</figcaption>
+          <figcaption class="cap"><b>Capture by handle.</b> Get a foothold, write your handle into the flag file, and the platform awards you automatically. No submission box, no instructor.</figcaption>
         </figure>
       </div>
     </section>
@@ -139,7 +139,7 @@
 <span class="c"># targets come up on your LAN; nmap them and go.</span></pre>
       <div class="note"><strong>Heads up:</strong> CyberKiller deploys deliberately vulnerable
         systems (real CVEs). Run it only in an isolated lab you control and are authorized to
-        test &mdash; never expose the targets to the internet.</div>
+        test. Never expose the targets to the internet.</div>
     </section>
   </main>
 
